@@ -1,13 +1,27 @@
--- {-# LANGUAGE OverloadedStrings #-}
-
--- import           Control.Applicative
+import           Control.Applicative
 import           Control.Concurrent
 import           Control.Monad
 import           Control.Monad.Loops
 import           Data.IORef
-import           Data.Monoid         ((<>))
+import           Options.Applicative
 import           System.Exit
 import           System.Random.MWC
+
+data Config = Config { pattern :: String }
+
+configParser :: Parser Config
+configParser = Config
+    <$> strOption (long "pattern"
+                    <> metavar "PATTERN"
+                    <> help "The pattern the onion address should start with.")
+
+optsParser :: ParserInfo Config
+optsParser = info (helper <*> configParser)
+                  (fullDesc
+                    <> progDesc
+                      "Generate an tor onion address starting with PATTERN"
+                    <> header "Oniongen - Generate slick onion addresses")
+
 
 gen :: MVar t -> MVar (Maybe String) -> IO ()
 gen stop res =
@@ -23,10 +37,11 @@ gen stop res =
 
 main :: IO ()
 main = do
-    cpus <- getNumCapabilities
+    conf <- execParser optsParser
+    let pat = pattern conf
 
-    let pattern = "TEST"
-    print $ "Searching for " <> pattern <> " using " <> show cpus <> " cpus.."
+    cpus <- getNumCapabilities
+    print $ "Searching for " <> pat <> " using " <> show cpus <> " cpus..."
 
     resVar  <- newEmptyMVar
     stopVar <- newEmptyMVar
@@ -47,4 +62,4 @@ main = do
                 modifyIORef' attemptRef (+1)
                 attempt <- readIORef attemptRef
                 when (attempt `mod` 25 == 0) $
-                  print $ "Attempt " <> show attempt <> ": " <> s
+                    print $ "Attempt " <> show attempt <> ": " <> s

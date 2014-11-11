@@ -51,6 +51,7 @@ executable oniongen
                      , mwc-random
                      , monad-loops
                      , oniongen-haskell
+                     , optparse-applicative
 
 test-suite test
     default-language: Haskell2010
